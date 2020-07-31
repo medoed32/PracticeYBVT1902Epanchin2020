@@ -24,29 +24,36 @@ import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView tvEnabledGPS;
-    TextView tvStatusGPS;
-    TextView tvLocationGPS;
-    TextView tvEnabledNet;
-    TextView tvStatusNet;
-    TextView tvLocationNet;
+    private TextView tvEnabledGPS;
+    private TextView tvStatusGPS;
+    private TextView tvLocationGPS;
+    private TextView tvEnabledNet;
+    private TextView tvStatusNet;
+    private TextView tvLocationNet;
 
-    TextView tvLocationAccel;
-    SensorManager sensorManager;
-    Sensor sensorAccel;
-    Sensor sensorLinAccel;
-    Sensor sensorGravity;
+    private TextView tvLocationAccel;
+    private TextView tvLocationGyros;
+    private SensorManager sensorManager;
+    private SensorManager sensorManagerGyros;
+
+    private Sensor sensorAccel;
+    private Sensor sensorGyros;
+    private Sensor sensorLinAccel;
+    private Sensor sensorGravity;
 
     private LocationManager locationManager;
-    StringBuilder sbGPS = new StringBuilder();
-    StringBuilder sbNet = new StringBuilder();
-    StringBuilder sbAccel = new StringBuilder();
 
-    float[] valuesAccel = new float[3];
-    float[] valuesAccelMotion = new float[3];
-    float[] valuesAccelGravity = new float[3];
-    float[] valuesLinAccel = new float[3];
-    float[] valuesGravity = new float[3];
+    private StringBuilder sbGPS = new StringBuilder();
+    private StringBuilder sbNet = new StringBuilder();
+    private StringBuilder sbAccel = new StringBuilder();
+    private StringBuilder sbGyros = new StringBuilder();
+
+    private float[] valuesGyros = new float[3];
+    private float[] valuesAccel = new float[3];
+    private float[] valuesAccelMotion = new float[3];
+    private float[] valuesAccelGravity = new float[3];
+    private float[] valuesLinAccel = new float[3];
+    private float[] valuesGravity = new float[3];
 
     Timer timer;
 
@@ -54,6 +61,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //Gyroscope
+        tvLocationGyros = findViewById(R.id.tvLocationGyros);
+        sensorManagerGyros = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorGyros = sensorManagerGyros.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
         //Accel
         tvLocationAccel = findViewById(R.id.tvLocationAccel);
@@ -75,10 +87,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        //Gyros
+        sensorManagerGyros.registerListener(listener, sensorGyros, SensorManager.SENSOR_DELAY_NORMAL);
         //Accel
         sensorManager.registerListener(listener, sensorAccel, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(listener, sensorLinAccel, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(listener, sensorGravity, SensorManager.SENSOR_DELAY_NORMAL);
+
         timer = new Timer();
         TimerTask task = new TimerTask() {
             @Override
@@ -113,8 +128,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         sensorManager.unregisterListener(listener);
-        timer.cancel();
         locationManager.removeUpdates(locationListener);
+        timer.cancel();
     }
 
     String format(float values[]) {
@@ -122,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void showInfo() {
+        //Accel
         sbAccel.setLength(0);
         sbAccel.append("Accelerometer: " + format(valuesAccel))
                 .append("\n\nAccel motion: " + format(valuesAccelMotion))
@@ -129,7 +145,12 @@ public class MainActivity extends AppCompatActivity {
                 .append("\n\nLin accel: " + format(valuesLinAccel))
                 .append("\n\nGravity: " + format(valuesGravity));
         tvLocationAccel.setText(sbAccel);
+        //Gyros
+        sbGyros.setLength(0);
+        sbGyros.append("Gyroscope: " + format(valuesGyros));
+        tvLocationGyros.setText(sbGyros);
     }
+
 
     SensorEventListener listener = new SensorEventListener() {
         @Override
@@ -150,6 +171,11 @@ public class MainActivity extends AppCompatActivity {
                 case Sensor.TYPE_GRAVITY:
                     for (int i = 0; i < 3; i++) {
                         valuesGravity[i] = event.values[i];
+                    }
+                    break;
+                case Sensor.TYPE_GYROSCOPE:
+                    for (int i = 0; i < 3; i++) {
+                        valuesGyros[i] = event.values[i];
                     }
                     break;
             }
